@@ -1,0 +1,44 @@
+# Serial Communication Settings
+serial_port: "/dev/ttyUSB0"
+baud_rate: 9600
+
+# Task Management Settings
+task_file_path: "data/tasks.csv"
+task_check_interval: 1500  # Time in seconds between task checks (25 minutes)
+
+# Time-Based Greetings
+greetings:
+  morning:
+    - "Good morning, Rubens! How are you today?"
+    - "Rise and shine, Rubens! Ready for a productive day?"
+    - "Morning, Rubens! Let's get started with your tasks."
+  afternoon:
+    - "Good afternoon, Rubens! How's your day going?"
+    - "Hello, Rubens! I hope your afternoon is going well."
+    - "Afternoon, Rubens! Ready to tackle the next task?"
+  evening:
+    - "Good evening, Rubens! How was your day?"
+    - "Evening, Rubens! Let’s finish the day strong."
+    - "Hi Rubens! Ready to wrap up your tasks for the day?"
+
+# Task Completion Messages
+completion_messages:
+  general:
+    - "Fantastic job, Rubens! You've completed this task."
+    - "Well done! This task is now complete."
+    - "You're doing great! This task is finished."
+
+# Options Prompts
+options_prompts:
+  general:
+    - "What would you like to do next? Please enter the number of your choice."
+    - "How can I assist you further? Enter the number of your selection."
+    - "What's your next step? Enter the number to proceed."
+
+# Exit Messages
+exit_messages:
+  general:
+    - "Thank you for using our service, Rubens. Have a wonderful day!"
+    - "Goodbye, Rubens! See you next time."
+    - "Take care, Rubens! Have a great day ahead."
+
