@@ -10,6 +10,9 @@ from datetime import datetime
 import threading
 import signal
 import sys
+from queue import Queue
+
+audio_queue = Queue()
 
 def load_config():
     """Load configuration from config/config.yaml."""
@@ -59,9 +62,12 @@ def save_tasks(task_file, tasks):
     except Exception as e:
         print(f"[ERROR] Failed to save tasks: {e}")
 
-def speak(message):
-    """Convert text to speech and play it."""
-    def play_message():
+def audio_worker():
+    """Worker function to play audio messages sequentially."""
+    while True:
+        message = audio_queue.get()
+        if message is None:
+            break
         try:
             tts = gTTS(message)
             tts.save("temp.mp3")
@@ -69,8 +75,11 @@ def speak(message):
             os.remove("temp.mp3")
         except Exception as e:
             print(f"[ERROR] Failed to play message: {e}")
-    
-    threading.Thread(target=play_message).start()
+        audio_queue.task_done()
+
+def speak(message):
+    """Add a message to the audio queue."""
+    audio_queue.put(message)
 
 def get_time_of_day():
     """Determine the current time of day."""
@@ -170,6 +179,8 @@ def move_to_next_task(current_task_index, tasks):
 def graceful_exit():
     """Perform a graceful exit."""
     print("[INFO] Performing graceful exit.")
+    audio_queue.put(None)  # Signal the audio worker to exit
+    audio_worker_thread.join()  # Wait for the audio worker to finish
     sys.exit(0)
 
 def signal_handler(sig, frame):
@@ -203,4 +214,6 @@ def main():
                 save_tasks(config['task_file_path'], tasks)
 
 if __name__ == "__main__":
+    audio_worker_thread = threading.Thread(target=audio_worker)
+    audio_worker_thread.start()
     main()
