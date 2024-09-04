@@ -12,9 +12,9 @@ import signal
 import sys
 
 def load_config():
-    """Load configuration from config.yaml."""
+    """Load configuration from config/config.yaml."""
     try:
-        with open("config.yaml", 'r') as config_file:
+        with open("config/config.yaml", 'r') as config_file:
             return yaml.safe_load(config_file)
     except Exception as e:
         print(f"[ERROR] Failed to load configuration: {e}")
