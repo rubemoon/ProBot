@@ -12,7 +12,13 @@ else
     exit 1
 fi
 
+# Activate the virtual environment
+echo "Activating the virtual environment..."
+source venv/bin/activate
+
 # Run the Python script
 echo "Starting the task manager..."
 python3 scripts/task_manager.py
 
+# Deactivate the virtual environment
+deactivate

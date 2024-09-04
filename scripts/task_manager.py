@@ -6,51 +6,71 @@ from gtts import gTTS
 from playsound import playsound
 import os
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
+import threading
+import signal
+import sys
 
 def load_config():
     """Load configuration from config.yaml."""
-    with open("config/config.yaml", 'r') as config_file:
-        return yaml.safe_load(config_file)
+    try:
+        with open("config.yaml", 'r') as config_file:
+            return yaml.safe_load(config_file)
+    except Exception as e:
+        print(f"[ERROR] Failed to load configuration: {e}")
+        sys.exit(1)
 
 def initialize_serial(port, baud_rate, timeout=5):
     """Initialize the serial connection to Arduino."""
-    print("[INFO] Initializing serial connection...")
-    arduino = serial.Serial(port, baud_rate, timeout=timeout)
-    time.sleep(2)  # Allow time for the connection to initialize
-    print("[INFO] Serial connection established.")
-    return arduino
+    try:
+        print("[INFO] Initializing serial connection...")
+        arduino = serial.Serial(port, baud_rate, timeout=timeout)
+        time.sleep(2)  # Allow time for the connection to initialize
+        print("[INFO] Serial connection established.")
+        return arduino
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize serial connection: {e}")
+        sys.exit(1)
 
 def read_tasks(task_file):
     """Read tasks from the CSV file."""
     tasks = []
-    with open(task_file, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)  # Skip header
-        for row in reader:
-            if len(row) == 2:
-                tasks.append({'task': row[0], 'status': row[1]})
-    print(f"[INFO] {len(tasks)} tasks loaded.")
+    try:
+        with open(task_file, 'r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header
+            for row in reader:
+                if len(row) == 2:
+                    tasks.append({'task': row[0], 'status': row[1]})
+        print(f"[INFO] {len(tasks)} tasks loaded.")
+    except Exception as e:
+        print(f"[ERROR] Failed to read tasks: {e}")
     return tasks
 
 def save_tasks(task_file, tasks):
     """Save tasks to the CSV file."""
-    with open(task_file, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Task', 'Status'])  # Write header
-        for task in tasks:
-            writer.writerow([task['task'], task['status']])
-    print(f"[INFO] Tasks saved successfully.")
+    try:
+        with open(task_file, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Task', 'Status'])  # Write header
+            for task in tasks:
+                writer.writerow([task['task'], task['status']])
+        print(f"[INFO] Tasks saved successfully.")
+    except Exception as e:
+        print(f"[ERROR] Failed to save tasks: {e}")
 
 def speak(message):
     """Convert text to speech and play it."""
-    try:
-        tts = gTTS(message)
-        tts.save("temp.mp3")
-        playsound("temp.mp3")
-        os.remove("temp.mp3")
-    except Exception as e:
-        print(f"[ERROR] Failed to play message: {e}")
+    def play_message():
+        try:
+            tts = gTTS(message)
+            tts.save("temp.mp3")
+            playsound("temp.mp3")
+            os.remove("temp.mp3")
+        except Exception as e:
+            print(f"[ERROR] Failed to play message: {e}")
+    
+    threading.Thread(target=play_message).start()
 
 def get_time_of_day():
     """Determine the current time of day."""
@@ -117,7 +137,7 @@ def handle_button_press(button_pressed, current_task_index, tasks, config):
         time.sleep(5)  # Wait for 5 seconds before exiting (adjust as needed)
         speak("I'll give you some time to work on this. See you later!")
         print("[INFO] Exiting the program after task repeat.")
-        exit(0)
+        graceful_exit()
     elif button_pressed == 4:  # Announce all pending tasks
         announce_pending(tasks)
     elif button_pressed == 14:  # Exit program
@@ -125,7 +145,7 @@ def handle_button_press(button_pressed, current_task_index, tasks, config):
         exit_message = random.choice(config['exit_messages']['general'])
         speak(exit_message)
         print("[INFO] Exiting the program. Have a productive day!")
-        exit(0)
+        graceful_exit()
     else:
         speak("I'm not sure what that means. Could you try again?")
         print(f"[WARNING] Unknown button code: {button_pressed}")
@@ -141,13 +161,26 @@ def move_to_next_task(current_task_index, tasks):
         announce_all_tasks(tasks)
         speak("You've completed all your tasks for the day. Great job, Rubens!")
         print("[INFO] All tasks completed.")
-        exit(0)
+        graceful_exit()
     else:
         announce_task(tasks[current_task_index])
     
     return current_task_index
 
+def graceful_exit():
+    """Perform a graceful exit."""
+    print("[INFO] Performing graceful exit.")
+    sys.exit(0)
+
+def signal_handler(sig, frame):
+    """Handle termination signals for graceful shutdown."""
+    print("[INFO] Signal received, exiting gracefully.")
+    graceful_exit()
+
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     config = load_config()
     arduino = initialize_serial(config['serial_port'], config['baud_rate'])
 
@@ -171,4 +204,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
